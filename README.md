@@ -1,54 +1,95 @@
-# \# Signora
 
-# 
+# Signora – Online E-Signature System
 
-# Online-la document upload panni, email-la link anuppi, signature vaangura e-sign system.
+## 📌 Project Overview
 
-# 
+Signora is a web-based electronic signature (e-signature) system that allows users to upload documents, add signature fields, and send signing requests through email.
 
-# \## Team \& Responsibilities
+Signers can open the secure signing link, view the document, and provide their electronic signature online. Once the signing process is completed, the system generates and stores the signed PDF along with an audit trail.
 
-# 
+The main goal of Signora is to make document signing simple, secure, and efficient without requiring physical paperwork.
 
-# | Name | Branch | Velai |
+## ✨ Key Features
 
-# |------|--------|-------|
+- User authentication and login
+- Document upload and storage
+- Signature field placement
+- Email-based signing invitations
+- Online electronic document signing
+- Signed PDF generation and storage
+- Audit trail for document activities
 
-# | Elaveny | feature/auth-upload | Login, document upload, storage |
+## 👥 Team Members & Responsibilities
 
-# | Divaranan | feature/signing-ui | Signature box page, signing page |
+| Name | Git Branch | Responsibilities |
+|---|---|---|
+| Elaveny | `feature/auth-upload` | User authentication, document upload, and file storage |
+| Divaranan | `feature/signing-ui` | Signature field placement and signing page UI |
+| Kisho | `feature/email-pdf` | Email notifications, signed PDF generation, and audit trail |
 
-# | kisho| feature/email-pdf | Email anuppurathu, signed PDF, audit trail |
+## 🔄 Application Workflow
 
-# 
+1. **Document Upload:** The user logs into the system and uploads a document.
+2. **Signature Placement:** The user places signature fields in the required positions.
+3. **Email Invitation:** The system generates a unique signing link and sends it to the signer via email.
+4. **Document Signing:** The signer opens the link and electronically signs the document.
+5. **Signed PDF Generation:** The system generates and stores the signed PDF.
+6. **Audit Trail:** The system records important activities related to the signing process.
 
-# \## Flow
+## 🌿 Git Branching Strategy
 
-# 1\. Document upload
+The project follows a feature-based Git branching strategy.
 
-# 2\. Signature box vaikkirathu
+- `main` – Main production branch.
+- `feature/auth-upload` – Authentication and document upload.
+- `feature/signing-ui` – Signature placement and signing interface.
+- `feature/email-pdf` – Email integration, PDF generation, and audit trail.
 
-# 3\. Signer-ku email link anuppirathu
+## 📋 Git Collaboration Rules
 
-# 4\. Signer link open panni sign pannuvaar
+1. Direct pushes to the `main` branch are strictly prohibited.
+2. Each team member must work on their assigned feature branch.
+3. All changes must be submitted through Pull Requests (PRs).
+4. Code must be reviewed and approved before merging into `main`.
+5. Only one designated team member is responsible for updating and maintaining the README file.
+6. Team members should regularly pull the latest changes from `main` to avoid merge conflicts.
 
-# 5\. Signed PDF save aagum
+## ⚙️ Installation and Setup
 
-# 
+Clone the repository:
 
-# \## Git Rules
+```bash
+git clone <repository-url>
+```
 
-# \- `main`-la nerae push panna koodaadhu
+Navigate to the project directory:
 
-# \- Ovvoruthar thanga feature branch-la velai seiyanum
+```bash
+cd Signora
+```
 
-# \- Pull Request moolama merge pannanum
+Switch to your assigned feature branch:
 
-# \- README-a oru aal mattum maathuvaar
+```bash
+git checkout feature/auth-upload
+```
 
-# 
+Install the project dependencies according to the selected technology stack.
 
-# \## License
+Start the development server using the appropriate command for the project.
 
-# MIT
+## 🔐 Security
 
+- Protect user authentication credentials.
+- Use secure document storage.
+- Generate unique signing links.
+- Restrict unauthorized document access.
+- Maintain an audit trail of signing activities.
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🎯 Project Objective
+
+To develop a reliable and user-friendly electronic signature platform that simplifies document management and signing through a secure online workflow.
