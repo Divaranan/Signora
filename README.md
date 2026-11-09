@@ -1,95 +1,167 @@
-
-# Signora – Online E-Signature System
+# Signora– Online Document Signing System
 
 ## 📌 Project Overview
 
-Signora is a web-based electronic signature (e-signature) system that allows users to upload documents, add signature fields, and send signing requests through email.
+Signora is a web-based electronic document signing system that allows users to upload, send, sign, and manage PDF documents online.
 
-Signers can open the secure signing link, view the document, and provide their electronic signature online. Once the signing process is completed, the system generates and stores the signed PDF along with an audit trail.
+The system simplifies the document approval process by replacing manual paperwork with a digital signing workflow.
 
-The main goal of Signora is to make document signing simple, secure, and efficient without requiring physical paperwork.
+## 🎯 Main Objectives
 
-## ✨ Key Features
+- Upload PDF documents.
+- Send documents to recipients for signing.
+- Allow users to sign documents electronically.
+- Track document signing status.
+- Download completed signed documents.
+- Maintain document activity history.
 
-- User authentication and login
-- Document upload and storage
-- Signature field placement
-- Email-based signing invitations
-- Online electronic document signing
-- Signed PDF generation and storage
-- Audit trail for document activities
+## 🚀 Main Features
 
-## 👥 Team Members & Responsibilities
+### 1. User Authentication
 
-| Name | Git Branch | Responsibilities |
-|---|---|---|
-| Elaveny | `feature/auth-upload` | User authentication, document upload, and file storage |
-| Divaranan | `feature/signing-ui` | Signature field placement and signing page UI |
-| Kisho | `feature/email-pdf` | Email notifications, signed PDF generation, and audit trail |
+- User Registration
+- User Login
+- Secure Password Hashing
+- JWT Authentication
 
-## 🔄 Application Workflow
+### 2. Document Management
 
-1. **Document Upload:** The user logs into the system and uploads a document.
-2. **Signature Placement:** The user places signature fields in the required positions.
-3. **Email Invitation:** The system generates a unique signing link and sends it to the signer via email.
-4. **Document Signing:** The signer opens the link and electronically signs the document.
-5. **Signed PDF Generation:** The system generates and stores the signed PDF.
-6. **Audit Trail:** The system records important activities related to the signing process.
+- Upload PDF Documents
+- View Uploaded Documents
+- Download Documents
+- Delete Documents
 
-## 🌿 Git Branching Strategy
+### 3. Electronic Signature
 
-The project follows a feature-based Git branching strategy.
+- Sign PDF Documents Online
+- Save Signature Details
+- Manage Signed Documents
 
-- `main` – Main production branch.
-- `feature/auth-upload` – Authentication and document upload.
-- `feature/signing-ui` – Signature placement and signing interface.
-- `feature/email-pdf` – Email integration, PDF generation, and audit trail.
+### 4. Document Tracking
 
-## 📋 Git Collaboration Rules
+- Pending Documents
+- Signed Documents
+- Rejected Documents
+- Expired Documents
 
-1. Direct pushes to the `main` branch are strictly prohibited.
-2. Each team member must work on their assigned feature branch.
-3. All changes must be submitted through Pull Requests (PRs).
-4. Code must be reviewed and approved before merging into `main`.
-5. Only one designated team member is responsible for updating and maintaining the README file.
-6. Team members should regularly pull the latest changes from `main` to avoid merge conflicts.
+### 5. Dashboard
+
+- Total Documents
+- Pending Documents
+- Signed Documents
+- User Activity
+
+### 6. Notifications
+
+- Notify recipients about signature requests.
+- Notify users when documents are signed.
+
+### 7. Audit Logs
+
+- Track document activities.
+- Record upload and signing timestamps.
+- Maintain document history.
+
+  
+
+## 🛠️ Technologies Used
+
+| Technology     | Purpose             |
+| -------------- | ------------------- |
+| Next.js        | Frontend            |
+| Go (Golang)    | Backend             |
+| PostgreSQL     | Database            |
+| JWT            | Authentication      |
+| PDF Processing | Document Management |
+| Git & GitHub   | Version Control     |
+
+## 📂 Project Structure
+
+```text
+eViaSign/
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── public/
+│   └── package.json
+│
+├── backend/
+│   ├── cmd/
+│   ├── config/
+│   ├── handlers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   └── go.mod
+│
+├── database/
+│   └── migrations/
+│
+└── README.md
+```
 
 ## ⚙️ Installation and Setup
 
-Clone the repository:
+### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone YOUR_REPOSITORY_URL
+cd eViaSign
 ```
 
-Navigate to the project directory:
+### 2. Frontend Setup
 
 ```bash
-cd Signora
+cd frontend
+npm install
+npm run dev
 ```
 
-Switch to your assigned feature branch:
+### 3. Backend Setup
 
 ```bash
-git checkout feature/auth-upload
+cd backend
+go mod tidy
+go run ./cmd
 ```
 
-Install the project dependencies according to the selected technology stack.
+### 4. Database Setup
 
-Start the development server using the appropriate command for the project.
+- Install PostgreSQL.
+- Create a database.
+- Configure database connection details.
+- Run database migrations.
 
-## 🔐 Security
+## 🔐 Environment Variables
 
-- Protect user authentication credentials.
-- Use secure document storage.
-- Generate unique signing links.
-- Restrict unauthorized document access.
-- Maintain an audit trail of signing activities.
+Configure the required environment variables in the backend `.env` file.
 
-## 📄 License
+```env
+PORT=8080
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=evisign
+JWT_SECRET=your_secret_key
+```
 
-This project is licensed under the MIT License.
+## 👥 Contributors
+  ELAVENY: feature/auth-upload
+  DIVARANAN: feature/signing-ui
+  KISHO: feature/email-pdf
 
-## 🎯 Project Objective
 
-To develop a reliable and user-friendly electronic signature platform that simplifies document management and signing through a secure online workflow.
+Implement User Authentication System with Registration, Login, and JWT-Based Session Handling
+Build Signer Signing Page with Token-Based Access, Signature Pad, and Submission Flow
+Implement Audit Trail Logging and Timeline Data for Document Activity Tracking
+
+
+
+
+
+
+
+
