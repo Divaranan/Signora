@@ -463,4 +463,3 @@ export default function SignersPage({ params }: { params: Promise<{ id: string }
     </>
   );
 }
-

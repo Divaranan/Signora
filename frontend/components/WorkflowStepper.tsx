@@ -34,4 +34,3 @@ export default function WorkflowStepper({ docId, currentStep }: WorkflowStepperP
     </nav>
   );
 }
-

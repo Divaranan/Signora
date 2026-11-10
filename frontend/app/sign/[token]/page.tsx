@@ -457,4 +457,3 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
     </div>
   );
 }
-

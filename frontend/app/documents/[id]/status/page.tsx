@@ -344,4 +344,3 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
     </>
   );
 }
-

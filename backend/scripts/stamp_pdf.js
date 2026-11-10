@@ -283,4 +283,3 @@ main().catch((err) => {
   console.error('Fatal error during PDF stamping:', err);
   process.exit(1);
 });
-

@@ -43,7 +43,7 @@ func (h BoxesHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.DB.Query(r.Context(), `
-		SELECT b.id, b.document_id, b.signer_id, COALESCE(s.name, ''), COALESCE(s.email, ''), 
+		SELECT b.id, b.document_id, b.signer_id, COALESCE(s.name, ''), COALESCE(s.email, ''),
 		       b.page, b.x, b.y, b.width, b.height, b.signed, b.created_at
 		FROM signature_boxes b
 		LEFT JOIN signers s ON b.signer_id = s.id
@@ -160,4 +160,3 @@ func (h BoxesHandler) Save(w http.ResponseWriter, r *http.Request) {
 		"count":   len(req.Boxes),
 	})
 }
-

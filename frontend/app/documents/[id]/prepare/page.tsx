@@ -386,4 +386,3 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
     </>
   );
 }
-

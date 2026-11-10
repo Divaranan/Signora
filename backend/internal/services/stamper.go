@@ -38,7 +38,7 @@ func GenerateSignedPDF(ctx context.Context, db *pgxpool.Pool, uploadDir string, 
 
 	// Fetch signature boxes with signer signature data
 	rows, err := db.Query(ctx, `
-		SELECT b.id, b.document_id, b.signer_id, COALESCE(s.name, ''), COALESCE(s.email, ''), 
+		SELECT b.id, b.document_id, b.signer_id, COALESCE(s.name, ''), COALESCE(s.email, ''),
 		       b.page, b.x, b.y, b.width, b.height, b.signed, COALESCE(s.signature_data, '')
 		FROM signature_boxes b
 		LEFT JOIN signers s ON b.signer_id = s.id
@@ -157,7 +157,7 @@ func GenerateSignedPDF(ctx context.Context, db *pgxpool.Pool, uploadDir string, 
 
 	// Update document with signed_file_name and status = completed
 	_, err = db.Exec(ctx, `
-		UPDATE documents 
+		UPDATE documents
 		SET signed_file_name = $1, status = 'completed'
 		WHERE id = $2
 	`, signedName, documentID)
@@ -180,4 +180,3 @@ func copyFallback(src, dst string) {
 		_ = os.WriteFile(dst, data, 0644)
 	}
 }
-

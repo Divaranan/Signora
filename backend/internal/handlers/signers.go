@@ -261,4 +261,3 @@ func generateSecureToken() string {
 	}
 	return hex.EncodeToString(bytes)
 }
-
