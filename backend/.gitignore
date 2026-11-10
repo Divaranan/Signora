@@ -1,0 +1,18 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Uploads directory
+uploads/
+*.pdf
+
+# Environment files
+.env
+
+# Node modules for stamp script
+node_modules/
+
