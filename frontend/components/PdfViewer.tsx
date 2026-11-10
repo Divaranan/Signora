@@ -66,15 +66,20 @@ export default function PdfViewer({
         const pdfjs = await getPdfJs();
         if (!pdfjs) return;
 
-        let loadingTask;
+             let loadingTask;
+
         if (pdfData) {
-          loadingTask = pdfjs.getDocument({ data: pdfData });
+          const originalBytes = new Uint8Array(pdfData);
+          const copiedBytes = Uint8Array.from(originalBytes);
+
+          loadingTask = pdfjs.getDocument({
+            data: copiedBytes,
+          });
         } else if (pdfUrl) {
           loadingTask = pdfjs.getDocument(pdfUrl);
         } else {
           return;
         }
-
         const doc = await loadingTask.promise;
         if (isCancelled) return;
 
