@@ -11,7 +11,7 @@
   "axios": "^1.7.9",
   "canvas-confetti": "^1.9.4",
   "lucide-react": "^0.468.0",
-  "next": "15.1.3",
+  "next": "^15.5.29",
   "pdf-lib": "^1.17.1",
   "react": "^19.0.0",
   "react-dom": "^19.0.0"
@@ -22,5 +22,8 @@
   "@types/react": "^19.0.3",
   "@types/react-dom": "^19.0.2",
   "typescript": "^5.7.2"
+ },
+ "overrides": {
+  "postcss": ">8.5.22"
  }
 }
