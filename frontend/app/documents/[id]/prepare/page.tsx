@@ -125,6 +125,44 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
   }
 
   // Save boxes to backend
+  async function addSignerFromBox(index: number) {
+  if (!pdfPagesLoaded) return;
+
+  if (boxes.some((b) =>
+    b.page < 1 || b.page > totalPages ||
+    ![b.x, b.y, b.width, b.height].every(Number.isFinite) ||
+    b.width <= 0 || b.height <= 0 ||
+    b.x < 0 || b.y < 0 ||
+    b.x + b.width > 100 || b.y + b.height > 100
+  )) {
+    setMessage({
+      text: 'Please correct invalid signature boxes first.',
+      type: 'error',
+    });
+    return;
+  }
+
+  try {
+    setSaving(true);
+
+    await api.post(`/api/documents/${docId}/boxes`, {
+      boxes: boxes.map((b) => ({
+        signerId: b.signerId || null,
+        page: b.page,
+        x: Math.round(b.x * 100) / 100,
+        y: Math.round(b.y * 100) / 100,
+        width: Math.round(b.width * 100) / 100,
+        height: Math.round(b.height * 100) / 100,
+      })),
+    });
+
+    router.push(`/documents/${docId}/signers?returnBox=${index}`);
+  } catch (err) {
+    setMessage({ text: getError(err), type: 'error' });
+  } finally {
+    setSaving(false);
+  }
+}
   async function saveBoxes() {
     if (!pdfPagesLoaded) {
       setMessage({ text: 'Wait for the PDF pages to finish loading before saving boxes.', type: 'error' });
@@ -376,21 +414,54 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
                   setSelectedBoxIndex(box.originalIndex);
                 }}
               >
-                <div className="sig-box-header">
-                  <span>
-                    {assignedSigner ? assignedSigner.name : 'Unassigned'}
-                  </span>
-                  <button
-                    className="sig-box-del"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteBox(box.originalIndex);
-                    }}
-                    title="Delete box"
-                  >
-                    ×
-                  </button>
-                </div>
+               <div className="sig-box-header">
+  <select
+    aria-label="Assign signer to signature box"
+    value={box.signerId || ''}
+    onChange={(e) => {
+      const value = e.target.value;
+
+      if (value === '__add_signer__') {
+        void addSignerFromBox(box.originalIndex);
+      } else {
+        assignSigner(box.originalIndex, value || null);
+      }
+    }}
+    onMouseDown={(e) => e.stopPropagation()}
+    onTouchStart={(e) => e.stopPropagation()}
+    onClick={(e) => e.stopPropagation()}
+    style={{
+      maxWidth: '85%',
+      fontSize: 12,
+      padding: '3px 5px',
+      borderRadius: 5,
+      border: '1px solid #a5b4fc',
+      background: '#ffffff',
+      color: '#312e81',
+      cursor: 'pointer',
+    }}
+  >
+    <option value="">Unassigned</option>
+    {signers.map((signer) => (
+      <option key={signer.id} value={signer.id}>
+        {signer.name}
+      </option>
+    ))}
+    <option value="__add_signer__">+ Add New Signer</option>
+  </select>
+
+  <button
+    className="sig-box-del"
+    onClick={(e) => {
+      e.stopPropagation();
+      deleteBox(box.originalIndex);
+    }}
+    title="Delete box"
+  >
+    ×
+  </button>
+</div>
+                  
 
                 <div
                   style={{

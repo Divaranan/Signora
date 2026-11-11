@@ -133,6 +133,14 @@ export default function SignersPage({ params }: { params: Promise<{ id: string }
       setName('');
       setEmail('');
       setSuccess(`Signer ${trimmedName} added successfully!`);
+      const returnBox = new URLSearchParams(window.location.search).get('returnBox');
+
+if (returnBox !== null && /^\d+$/.test(returnBox)) {
+  router.push(
+    `/documents/${docId}/prepare?assignBox=${returnBox}&signerId=${res.data.signer.id}`
+  );
+  return;
+}
     } catch (err) {
       setError(getError(err));
     } finally {
