@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef, use } from 'react';
+import { useEffect, useState, useRef, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Save, ArrowRight, UserCheck } from 'lucide-react';
 import Nav from '@/components/Nav';
@@ -36,6 +36,7 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [pdfPagesLoaded, setPdfPagesLoaded] = useState(false);
   const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({ width: 600, height: 800 });
 
   const [selectedBoxIndex, setSelectedBoxIndex] = useState<number | null>(null);
@@ -68,8 +69,8 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
         setLoading(true);
         const [pdfRes, signersRes, boxesRes, docsRes] = await Promise.all([
           api.get(`/api/documents/${docId}/view`, { responseType: 'arraybuffer' }),
-          api.get(`/api/documents/${docId}/signers`).catch(() => ({ data: { signers: [] } })),
-          api.get(`/api/documents/${docId}/boxes`).catch(() => ({ data: { boxes: [] } })),
+          api.get(`/api/documents/${docId}/signers`),
+          api.get(`/api/documents/${docId}/boxes`),
           api.get('/api/documents'),
         ]);
 
@@ -88,6 +89,11 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
 
     loadAll();
   }, [docId, router]);
+
+  const handleTotalPagesLoaded = useCallback((total: number) => {
+    setTotalPages(total);
+    setPdfPagesLoaded(true);
+  }, []);
 
   // Add a new signature box to the current page
   function addBox() {
@@ -120,6 +126,14 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
 
   // Save boxes to backend
   async function saveBoxes() {
+    if (!pdfPagesLoaded) {
+      setMessage({ text: 'Wait for the PDF pages to finish loading before saving boxes.', type: 'error' });
+      return;
+    }
+    if (boxes.some((box) => !Number.isInteger(box.page) || box.page < 1 || box.page > totalPages)) {
+      setMessage({ text: 'Every signature box must be placed on an existing PDF page.', type: 'error' });
+      return;
+    }
     try {
       setSaving(true);
       setMessage(null);
@@ -221,6 +235,14 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
   const currentPageBoxes = boxes
     .map((b, idx) => ({ ...b, originalIndex: idx }))
     .filter((b) => b.page === currentPage);
+  const invalidBoxes = boxes
+    .map((box, index) => ({ box, index }))
+    .filter(({ box }) =>
+      !Number.isInteger(box.page) || box.page < 1 || box.page > totalPages ||
+      ![box.x, box.y, box.width, box.height].every(Number.isFinite) ||
+      box.x < 0 || box.y < 0 || box.width <= 0 || box.height <= 0 ||
+      box.x + box.width > 100 || box.y + box.height > 100
+    );
 
   return (
     <>
@@ -234,10 +256,10 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
             </p>
           </div>
           <div className="actions">
-            <button className="btn secondary" onClick={addBox} disabled={loading}>
+            <button className="btn secondary" onClick={addBox} disabled={loading || !pdfPagesLoaded}>
               <Plus size={16} /> Add Signature Box
             </button>
-            <button className="btn" onClick={saveBoxes} disabled={saving || loading}>
+            <button className="btn" onClick={saveBoxes} disabled={saving || loading || !pdfPagesLoaded}>
               <Save size={16} /> {saving ? 'Saving...' : 'Save Boxes'}
             </button>
             <button
@@ -254,6 +276,19 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
         {message && (
           <div className={message.type} style={{ marginBottom: 14 }}>
             {message.text}
+          </div>
+        )}
+
+        {pdfPagesLoaded && invalidBoxes.length > 0 && (
+          <div className="error" style={{ marginBottom: 14 }}>
+            <strong>Some saved signature boxes are outside the PDF page bounds.</strong>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {invalidBoxes.map(({ box, index }) => (
+                <button key={index} className="btn sm danger" onClick={() => deleteBox(index)}>
+                  Remove invalid box on page {box.page}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -317,7 +352,7 @@ export default function PreparePage({ params }: { params: Promise<{ id: string }
           pdfData={pdfData}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          onTotalPagesLoaded={setTotalPages}
+          onTotalPagesLoaded={handleTotalPagesLoaded}
           onPageDimensionsChanged={setPageDimensions}
         >
           {currentPageBoxes.map((box) => {

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useCallback } from 'react';
 import {
   FileText,
   CheckCircle2,
@@ -33,6 +33,7 @@ interface DocInfo {
 
 interface Box {
   id: string;
+  signerId: string;
   page: number;
   x: number;
   y: number;
@@ -54,6 +55,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [pdfPagesLoaded, setPdfPagesLoaded] = useState(false);
 
   // Signatures recorded: map of box index or global signature
   const [adoptedSignature, setAdoptedSignature] = useState<string | null>(null);
@@ -69,6 +71,9 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
     async function loadSigningData() {
       try {
         setLoading(true);
+        setPdfPagesLoaded(false);
+        setBoxes([]);
+        setPdfData(null);
         setErrorStatus(null);
         setErrorMessage('');
 
@@ -106,6 +111,19 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
     loadSigningData();
   }, [token]);
 
+  const handleTotalPagesLoaded = useCallback((total: number) => {
+    setTotalPages(total);
+    setPdfPagesLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!pdfPagesLoaded) return;
+    if (boxes.some((box) => !Number.isInteger(box.page) || box.page < 1 || box.page > totalPages)) {
+      setErrorStatus(422);
+      setErrorMessage('A signature box refers to a page that is not in this PDF. Please contact the sender.');
+    }
+  }, [boxes, pdfPagesLoaded, totalPages]);
+
   // Handle signature adoption
   function handleSignatureAdopted(dataUrl: string) {
     setAdoptedSignature(dataUrl);
@@ -116,6 +134,11 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
   async function handleSubmit() {
     if (!adoptedSignature) {
       setIsPadOpen(true);
+      return;
+    }
+    if (!boxes.length || !pdfPagesLoaded || boxes.some((box) => box.page < 1 || box.page > totalPages)) {
+      setErrorStatus(422);
+      setErrorMessage('Required signature boxes could not be verified. Please contact the sender.');
       return;
     }
 
@@ -396,7 +419,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
             pdfData={pdfData}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
-            onTotalPagesLoaded={setTotalPages}
+            onTotalPagesLoaded={handleTotalPagesLoaded}
           >
             {currentPageBoxes.map((box, idx) => (
               <div
@@ -407,6 +430,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
                   top: `${box.y}%`,
                   width: `${box.width}%`,
                   height: `${box.height}%`,
+                  zIndex: 2,
                   border: adoptedSignature ? '2px solid #16a34a' : '2px dashed #4f46e5',
                   background: adoptedSignature ? 'rgba(34, 197, 94, 0.15)' : 'rgba(99, 102, 241, 0.18)',
                   borderRadius: 6,
@@ -419,7 +443,8 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
                   boxSizing: 'border-box',
                 }}
                 onClick={() => setIsPadOpen(true)}
-                title="Click to sign"
+                title={`Signature required for ${signer?.name || 'you'} - click to sign`}
+                aria-label={`Signature box on page ${box.page}; click to provide your signature`}
               >
                 {adoptedSignature ? (
                   <img

@@ -31,6 +31,8 @@ type Signer struct {
 	Status         string     `json:"status"` // "pending" | "signed"
 	SignedAt       *time.Time `json:"signedAt,omitempty"`
 	SignatureData  *string    `json:"signatureData,omitempty"`
+	EmailSent      bool       `json:"emailSent"`
+	EmailSentAt    *time.Time `json:"emailSentAt,omitempty"`
 	CreatedAt      time.Time  `json:"createdAt"`
 }
 

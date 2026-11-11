@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"phase1-signora/backend/internal/middleware"
@@ -16,13 +18,13 @@ type BoxesHandler struct {
 }
 
 type BoxInput struct {
-	ID       *string  `json:"id,omitempty"`
-	SignerID *string  `json:"signerId"`
-	Page     int      `json:"page"`
-	X        float64  `json:"x"`
-	Y        float64  `json:"y"`
-	Width    float64  `json:"width"`
-	Height   float64  `json:"height"`
+	ID       *string `json:"id,omitempty"`
+	SignerID *string `json:"signerId"`
+	Page     int     `json:"page"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Width    float64 `json:"width"`
+	Height   float64 `json:"height"`
 }
 
 type SaveBoxesRequest struct {
@@ -37,7 +39,11 @@ func (h BoxesHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Verify doc ownership
 	var exists bool
 	err := h.DB.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM documents WHERE id=$1 AND user_id=$2)`, docID, userID).Scan(&exists)
-	if err != nil || !exists {
+	if err != nil {
+		utils.Error(w, 500, "Could not verify document ownership")
+		return
+	}
+	if !exists {
 		utils.Error(w, 404, "Document not found")
 		return
 	}
@@ -67,6 +73,10 @@ func (h BoxesHandler) List(w http.ResponseWriter, r *http.Request) {
 		b.SignerID = signerID
 		boxes = append(boxes, b)
 	}
+	if err := rows.Err(); err != nil {
+		utils.Error(w, 500, "Could not read signature boxes")
+		return
+	}
 
 	utils.JSON(w, 200, map[string]any{"boxes": boxes})
 }
@@ -82,8 +92,8 @@ func (h BoxesHandler) Save(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, 404, "Document not found")
 		return
 	}
-	if docStatus == "completed" {
-		utils.Error(w, 400, "Cannot modify signature boxes on a completed document")
+	if docStatus != "draft" {
+		utils.Error(w, 400, "Cannot modify signature boxes after the document has been sent")
 		return
 	}
 
@@ -110,28 +120,28 @@ func (h BoxesHandler) Save(w http.ResponseWriter, r *http.Request) {
 
 	// Insert new boxes
 	for _, box := range req.Boxes {
-		if box.Page < 1 {
-			box.Page = 1
+		if !validBoxGeometry(box.Page, box.X, box.Y, box.Width, box.Height) {
+			utils.Error(w, 400, "Signature box coordinates must fit within the page")
+			return
 		}
-		if box.Width <= 0 {
-			box.Width = 18
-		}
-		if box.Height <= 0 {
-			box.Height = 7
-		}
-
-		// Ensure box is within 0-100% bounds
-		if box.X < 0 {
-			box.X = 0
-		}
-		if box.Y < 0 {
-			box.Y = 0
-		}
-		if box.X+box.Width > 100 {
-			box.X = 100 - box.Width
-		}
-		if box.Y+box.Height > 100 {
-			box.Y = 100 - box.Height
+		if box.SignerID != nil {
+			signerID := strings.TrimSpace(*box.SignerID)
+			if signerID == "" {
+				utils.Error(w, 400, "Invalid signer for signature box")
+				return
+			}
+			var belongsToDocument bool
+			if err := tx.QueryRow(r.Context(),
+				`SELECT EXISTS(SELECT 1 FROM signers WHERE id=$1 AND document_id=$2)`,
+				signerID, docID).Scan(&belongsToDocument); err != nil {
+				utils.Error(w, 500, "Could not verify signature box signer")
+				return
+			}
+			if !belongsToDocument {
+				utils.Error(w, 400, "Signature box signer does not belong to this document")
+				return
+			}
+			box.SignerID = &signerID
 		}
 
 		_, err = tx.Exec(r.Context(), `
@@ -145,10 +155,13 @@ func (h BoxesHandler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add audit log
-	_, _ = tx.Exec(r.Context(), `
+	if _, err := tx.Exec(r.Context(), `
 		INSERT INTO audit_logs (document_id, action, performed_by, details)
 		VALUES ($1, 'BOXES_SAVED', 'Sender', $2)
-	`, docID, fmt.Sprintf("Placed and saved %d signature box(es)", len(req.Boxes)))
+	`, docID, fmt.Sprintf("Placed and saved %d signature box(es)", len(req.Boxes))); err != nil {
+		utils.Error(w, 500, "Could not record signature box changes")
+		return
+	}
 
 	if err := tx.Commit(r.Context()); err != nil {
 		utils.Error(w, 500, "Could not commit transaction")
@@ -159,4 +172,13 @@ func (h BoxesHandler) Save(w http.ResponseWriter, r *http.Request) {
 		"message": "Signature boxes saved successfully",
 		"count":   len(req.Boxes),
 	})
+}
+
+func validBoxGeometry(page int, x, y, width, height float64) bool {
+	validDimension := func(value float64) bool {
+		return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= 0 && value <= 100
+	}
+	return page >= 1 && validDimension(x) && validDimension(y) &&
+		validDimension(width) && validDimension(height) &&
+		width > 0 && height > 0 && x+width <= 100 && y+height <= 100
 }
