@@ -17,12 +17,14 @@ import {
 import Nav from '@/components/Nav';
 import WorkflowStepper from '@/components/WorkflowStepper';
 import { api, API_URL, getError } from '@/lib/api';
+import { signingLink } from '@/lib/signing-link';
 
 interface Signer {
   id: string;
   name: string;
   email: string;
   token: string;
+  tokenExpiresAt: string;
   status: 'pending' | 'signed';
   signedAt?: string;
   createdAt: string;
@@ -65,6 +67,7 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -109,11 +112,79 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
     }
   }
 
-  function copySignerLink(signerToken: string) {
-    const url = `${window.location.origin}/sign/${signerToken}`;
-    navigator.clipboard.writeText(url);
-    setCopiedToken(signerToken);
-    setTimeout(() => setCopiedToken(null), 2500);
+  async function getCurrentSigner(signerId: string): Promise<{ signer: Signer | null; documentStatus: string }> {
+    const response = await api.get(`/api/documents/${docId}/status`);
+    const latest: StatusSummary = response.data;
+    setSummary(latest);
+    return {
+      signer: latest.signers.find((item) => item.id === signerId) || null,
+      documentStatus: latest.document.status,
+    };
+  }
+
+  function isTokenExpired(signer: Signer): boolean {
+    const expiresAt = Date.parse(signer.tokenExpiresAt);
+    return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
+  }
+
+  async function copySignerLink(signerId: string) {
+    setLinkError('');
+    try {
+      const { signer, documentStatus } = await getCurrentSigner(signerId);
+      if (!signer || signer.status !== 'pending' || !signer.token) {
+        setLinkError('This signer is no longer pending. Refresh the status to see the latest state.');
+        return;
+      }
+      if (documentStatus !== 'pending') {
+        setLinkError(documentStatus === 'draft'
+          ? 'This document is still a draft. Send it for signing before sharing a link.'
+          : 'This document is not accepting signatures.');
+        return;
+      }
+      if (isTokenExpired(signer)) {
+        setLinkError('This signing link has expired. Resend the signing request to issue a current link.');
+        return;
+      }
+      await navigator.clipboard.writeText(signingLink(signer.token));
+      setCopiedToken(signer.id);
+      setTimeout(() => setCopiedToken(null), 2500);
+    } catch (err) {
+      setLinkError(getError(err));
+    }
+  }
+
+  async function openSignerLink(signerId: string) {
+    setLinkError('');
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) {
+      setLinkError('Allow pop-ups to open the signing page.');
+      return;
+    }
+    popup.opener = null;
+    try {
+      const { signer, documentStatus } = await getCurrentSigner(signerId);
+      if (!signer || signer.status !== 'pending' || !signer.token) {
+        popup.close();
+        setLinkError('This signer is no longer pending. Refresh the status to see the latest state.');
+        return;
+      }
+      if (documentStatus !== 'pending') {
+        popup.close();
+        setLinkError(documentStatus === 'draft'
+          ? 'This document is still a draft. Send it for signing before opening a link.'
+          : 'This document is not accepting signatures.');
+        return;
+      }
+      if (isTokenExpired(signer)) {
+        popup.close();
+        setLinkError('This signing link has expired. Resend the signing request to issue a current link.');
+        return;
+      }
+      popup.location.href = signingLink(signer.token);
+    } catch (err) {
+      popup.close();
+      setLinkError(getError(err));
+    }
   }
 
   return (
@@ -164,6 +235,7 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
         <WorkflowStepper docId={docId} currentStep="status" />
 
         {error && <div className="error" style={{ marginBottom: 16 }}>{error}</div>}
+        {linkError && <div className="error" role="alert" style={{ marginBottom: 16 }}>{linkError}</div>}
 
         {loading ? (
           <p className="muted">Loading status details...</p>
@@ -258,28 +330,39 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
                             <CheckCircle2 size={14} /> Signed on{' '}
                             {signer.signedAt ? new Date(signer.signedAt).toLocaleString() : 'N/A'}
                           </div>
+                        ) : summary.document.status === 'draft' ? (
+                          <div className="muted" style={{ marginTop: 8, fontSize: 12.5 }}>
+                            Draft — send the document before sharing a signing link.
+                          </div>
+                        ) : summary.document.status !== 'pending' ? (
+                          <div className="muted" style={{ marginTop: 8, fontSize: 12.5 }}>
+                            Document is not accepting signatures.
+                          </div>
+                        ) : isTokenExpired(signer) ? (
+                          <div style={{ marginTop: 8, fontSize: 12.5, color: '#b45309' }}>
+                            Signing link expired — resend the request to renew it.
+                          </div>
                         ) : (
                           <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
                             <button
                               className="btn sm secondary"
-                              onClick={() => copySignerLink(signer.token)}
+                              onClick={() => copySignerLink(signer.id)}
                             >
-                              {copiedToken === signer.token ? (
+                              {copiedToken === signer.id ? (
                                 <Check size={13} color="#16a34a" />
                               ) : (
                                 <Copy size={13} />
                               )}
-                              {copiedToken === signer.token ? 'Link Copied' : 'Copy Signing Link'}
+                              {copiedToken === signer.id ? 'Link Copied' : 'Copy Signing Link'}
                             </button>
-                            <a
-                              href={`/sign/${signer.token}`}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => openSignerLink(signer.id)}
                               className="btn sm ghost"
                               style={{ fontSize: 12 }}
                             >
                               Open <ExternalLink size={12} />
-                            </a>
+                            </button>
                           </div>
                         )}
                       </div>

@@ -209,8 +209,10 @@ type emailResult struct {
 }
 
 type signerLink struct {
+	SignerID   string `json:"signerId"`
 	Name       string `json:"name"`
 	Email      string `json:"email"`
+	Token      string `json:"token"`
 	SigningURL string `json:"signingUrl"`
 }
 
@@ -358,7 +360,9 @@ func (h SignersHandler) Send(w http.ResponseWriter, r *http.Request) {
 		}
 
 		link := fmt.Sprintf("%s/sign/%s", baseURL, token)
-		links = append(links, signerLink{Name: t.Name, Email: t.Email, SigningURL: link})
+		links = append(links, signerLink{
+			SignerID: t.ID, Name: t.Name, Email: t.Email, Token: token, SigningURL: link,
+		})
 
 		subject, htmlBody, textBody := services.SigningRequestEmail(t.Name, senderName, docTitle, link, expires, t.EmailSent)
 		if err := h.Mailer.Send(t.Email, subject, htmlBody, textBody, nil); err != nil {

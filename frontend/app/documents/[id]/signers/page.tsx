@@ -17,12 +17,14 @@ import {
 import Nav from '@/components/Nav';
 import WorkflowStepper from '@/components/WorkflowStepper';
 import { api, getError } from '@/lib/api';
+import { signingLink } from '@/lib/signing-link';
 
 interface Signer {
   id: string;
   name: string;
   email: string;
   token?: string;
+  tokenExpiresAt?: string;
   status: 'pending' | 'signed';
   signedAt?: string;
 }
@@ -34,8 +36,10 @@ interface Box {
 }
 
 interface SignerLink {
+  signerId: string;
   name: string;
   email: string;
+  token: string;
   signingUrl: string;
 }
 
@@ -187,7 +191,12 @@ if (returnBox !== null && /^\d+$/.test(returnBox)) {
       setError('');
       const res = await api.post(`/api/documents/${docId}/send`);
       setDocStatus('pending');
-      setGeneratedLinks(res.data.links || []);
+      const links: SignerLink[] = res.data.links || [];
+      setSigners((current) => current.map((signer) => {
+        const latest = links.find((link) => link.signerId === signer.id);
+        return latest ? { ...signer, token: latest.token } : signer;
+      }));
+      setGeneratedLinks(links);
       setSuccess(res.data.message || 'Document sent for signing!');
     } catch (err) {
       setError(getError(err));
@@ -196,10 +205,68 @@ if (returnBox !== null && /^\d+$/.test(returnBox)) {
     }
   }
 
-  function copyToClipboard(url: string, index: number) {
-    navigator.clipboard.writeText(url);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2500);
+  async function getCurrentSigningLink(signerId: string): Promise<string | null> {
+    const response = await api.get(`/api/documents/${docId}/status`);
+    const latestSigners: Signer[] = response.data.signers || [];
+    const latestSigner = latestSigners.find((signer) => signer.id === signerId);
+    setSigners(latestSigners);
+    setDocStatus(response.data.document.status);
+
+    if (response.data.document.status !== 'pending') {
+      setError(response.data.document.status === 'draft'
+        ? 'This document is still a draft. Send it for signing before sharing a link.'
+        : 'This document is not accepting signatures.');
+      return null;
+    }
+    if (!latestSigner || latestSigner.status !== 'pending' || !latestSigner.token) {
+      setError('This signer is no longer pending. Refresh the signer list for the current status.');
+      return null;
+    }
+    const expiresAt = latestSigner.tokenExpiresAt ? Date.parse(latestSigner.tokenExpiresAt) : NaN;
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      setError('This signing link has expired. Resend the signing request to issue a current link.');
+      return null;
+    }
+    const currentToken = latestSigner.token;
+    const url = signingLink(currentToken);
+    setGeneratedLinks((current) => current?.map((link) =>
+      link.signerId === signerId ? { ...link, token: currentToken, signingUrl: url } : link
+    ) || null);
+    return url;
+  }
+
+  async function copyToClipboard(signerId: string, index: number) {
+    setError('');
+    try {
+      const url = await getCurrentSigningLink(signerId);
+      if (!url) return;
+      await navigator.clipboard.writeText(url);
+      setGeneratedLinks((current) => current?.map((link) =>
+        link.signerId === signerId ? { ...link, signingUrl: url } : link
+      ) || null);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2500);
+    } catch (err) {
+      setError(getError(err));
+    }
+  }
+
+  async function openSigningLink(signerId: string) {
+    setError('');
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) {
+      setError('Allow pop-ups to open the signing page.');
+      return;
+    }
+    popup.opener = null;
+    try {
+      const url = await getCurrentSigningLink(signerId);
+      if (url) popup.location.href = url;
+      else popup.close();
+    } catch (err) {
+      popup.close();
+      setError(getError(err));
+    }
   }
 
   const unassignedBoxes = boxes.filter((b) => !b.signerId).length;
@@ -413,7 +480,7 @@ if (returnBox !== null && /^\d+$/.test(returnBox)) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
                 {generatedLinks.map((link, idx) => (
                   <div
-                    key={idx}
+                    key={link.signerId}
                     style={{
                       padding: '12px 14px',
                       background: '#f8fafc',
@@ -440,10 +507,17 @@ if (returnBox !== null && /^\d+$/.test(returnBox)) {
                       />
                       <button
                         className="btn sm secondary"
-                        onClick={() => copyToClipboard(link.signingUrl, idx)}
+                        onClick={() => copyToClipboard(link.signerId, idx)}
                       >
                         {copiedIndex === idx ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
                         {copiedIndex === idx ? 'Copied' : 'Copy'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn sm ghost"
+                        onClick={() => openSigningLink(link.signerId)}
+                      >
+                        Open <ArrowRight size={13} />
                       </button>
                     </div>
                   </div>

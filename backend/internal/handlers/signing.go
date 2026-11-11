@@ -52,7 +52,10 @@ func (h SigningHandler) GetSigningInfo(w http.ResponseWriter, r *http.Request) {
 		&docTitle, &originalName, &docStatus,
 	)
 	if err == pgx.ErrNoRows {
-		utils.Error(w, 404, "Invalid signing link. The link does not exist or has been removed.")
+		utils.JSON(w, 404, map[string]string{
+			"error": "Invalid signing link. The link does not exist or has been removed.",
+			"state": "invalid",
+		})
 		return
 	}
 	if err != nil {
@@ -63,17 +66,29 @@ func (h SigningHandler) GetSigningInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Check if already signed
 	if signer.Status == "signed" {
-		utils.Error(w, 409, "You have already completed signing this document.")
+		utils.JSON(w, 409, map[string]string{
+			"error": "You have already completed signing this document.",
+			"state": "signed",
+		})
 		return
 	}
 
 	// Check if expired
 	if time.Now().After(signer.TokenExpiresAt) {
-		utils.Error(w, 410, "This signing link has expired. Please contact the sender to request a new link.")
+		utils.JSON(w, 410, map[string]string{
+			"error": "This signing link has expired. Please contact the sender to request a new link.",
+			"state": "expired",
+		})
 		return
 	}
 	if docStatus != "pending" {
-		utils.Error(w, 409, "This document is not currently accepting signatures.")
+		state := "closed"
+		message := "This document is not currently accepting signatures."
+		if docStatus == "draft" {
+			state = "draft"
+			message = "This document has not been sent for signing yet."
+		}
+		utils.JSON(w, 409, map[string]string{"error": message, "state": state})
 		return
 	}
 
@@ -210,7 +225,7 @@ func (h SigningHandler) SubmitSignature(w http.ResponseWriter, r *http.Request) 
 		FOR UPDATE OF s
 	`, token).Scan(&signerID, &docID, &signerName, &signerEmail, &currentStatus, &expiresAt, &documentStatus)
 	if err == pgx.ErrNoRows {
-		utils.Error(w, 404, "Invalid signing link")
+		utils.JSON(w, 404, map[string]string{"error": "Invalid signing link", "state": "invalid"})
 		return
 	}
 	if err != nil {
@@ -219,15 +234,24 @@ func (h SigningHandler) SubmitSignature(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if currentStatus == "signed" {
-		utils.Error(w, 409, "You have already submitted your signature for this document.")
+		utils.JSON(w, 409, map[string]string{
+			"error": "You have already submitted your signature for this document.",
+			"state": "signed",
+		})
 		return
 	}
 	if time.Now().After(expiresAt) {
-		utils.Error(w, 410, "This signing link has expired.")
+		utils.JSON(w, 410, map[string]string{"error": "This signing link has expired.", "state": "expired"})
 		return
 	}
 	if documentStatus != "pending" {
-		utils.Error(w, 409, "This document is not currently accepting signatures.")
+		state := "closed"
+		message := "This document is not currently accepting signatures."
+		if documentStatus == "draft" {
+			state = "draft"
+			message = "This document has not been sent for signing yet."
+		}
+		utils.JSON(w, 409, map[string]string{"error": message, "state": state})
 		return
 	}
 

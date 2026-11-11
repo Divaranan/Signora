@@ -48,6 +48,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
   const [loading, setLoading] = useState(true);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [errorState, setErrorState] = useState('');
   const [signatureSetupError, setSignatureSetupError] = useState('');
   const [signer, setSigner] = useState<Signer | null>(null);
   const [document, setDocument] = useState<DocInfo | null>(null);
@@ -78,6 +79,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
         setSignatureSetupError('');
         setErrorStatus(null);
         setErrorMessage('');
+        setErrorState('');
 
         // 1. Fetch signing info
         const infoRes = await axios.get(`${API_URL}/api/signing/${token}`);
@@ -101,9 +103,11 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
           const msg = err.response?.data?.error || err.message;
           setErrorStatus(status);
           setErrorMessage(msg);
+          setErrorState(err.response?.data?.state || stateFromStatus(status));
         } else {
           setErrorStatus(500);
           setErrorMessage('Could not load signing session.');
+          setErrorState('invalid');
         }
       } finally {
         setLoading(false);
@@ -112,6 +116,14 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
 
     loadSigningData();
   }, [token]);
+
+  function stateFromStatus(status: number): string {
+    if (status === 404) return 'invalid';
+    if (status === 410) return 'expired';
+    if (status === 422) return 'setup';
+    if (status === 409) return 'conflict';
+    return 'unavailable';
+  }
 
   const handleTotalPagesLoaded = useCallback((total: number) => {
     setTotalPages(total);
@@ -163,7 +175,14 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
         });
       } catch {}
     } catch (err: any) {
-      alert(getError(err));
+      if (axios.isAxiosError(err) && [404, 409, 410, 422].includes(err.response?.status || 0)) {
+        const status = err.response?.status || 500;
+        setErrorStatus(status);
+        setErrorMessage(err.response?.data?.error || getError(err));
+        setErrorState(err.response?.data?.state || stateFromStatus(status));
+      } else {
+        alert(getError(err));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -193,7 +212,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
         }}
       >
         <div className="card" style={{ maxWidth: 480, textAlign: 'center', padding: '40px 24px' }}>
-          {errorStatus === 409 ? (
+          {errorState === 'signed' ? (
             <>
               <CheckCircle2 size={54} color="#16a34a" style={{ margin: '0 auto 16px' }} />
               <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>
@@ -203,7 +222,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
                 {errorMessage || 'You have already completed signing this document.'}
               </p>
             </>
-          ) : errorStatus === 410 ? (
+          ) : errorState === 'expired' ? (
             <>
               <Clock size={54} color="#d97706" style={{ margin: '0 auto 16px' }} />
               <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>
@@ -214,7 +233,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
                   'This signing link has expired. Please contact the document sender to receive an updated link.'}
               </p>
             </>
-          ) : errorStatus === 422 ? (
+          ) : errorState === 'setup' ? (
             <>
               <AlertTriangle size={54} color="#d97706" style={{ margin: '0 auto 16px' }} />
               <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>
@@ -224,7 +243,31 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
                 {errorMessage || 'The sender needs to correct the signature boxes before you can sign.'}
               </p>
             </>
-          ) : (
+          ) : errorState === 'draft' ? (
+            <>
+              <Clock size={54} color="#d97706" style={{ margin: '0 auto 16px' }} />
+              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>Not Sent Yet</h2>
+              <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
+                {errorMessage || 'The sender has not sent this document for signing yet.'}
+              </p>
+            </>
+          ) : errorState === 'closed' ? (
+            <>
+              <Clock size={54} color="#64748b" style={{ margin: '0 auto 16px' }} />
+              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>Document Unavailable</h2>
+              <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
+                {errorMessage || 'This document is no longer accepting signatures.'}
+              </p>
+            </>
+          ) : errorState === 'conflict' ? (
+            <>
+              <AlertTriangle size={54} color="#d97706" style={{ margin: '0 auto 16px' }} />
+              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>Cannot Sign Yet</h2>
+              <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
+                {errorMessage || 'The signing request is not currently available.'}
+              </p>
+            </>
+          ) : errorState === 'invalid' ? (
             <>
               <AlertTriangle size={54} color="#dc2626" style={{ margin: '0 auto 16px' }} />
               <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>
@@ -233,6 +276,16 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
               <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
                 {errorMessage ||
                   'This signing link is invalid or no longer exists. Please verify the URL from your invitation.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <AlertTriangle size={54} color="#dc2626" style={{ margin: '0 auto 16px' }} />
+              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>
+                Unable to Load Signing Request
+              </h2>
+              <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
+                {errorMessage || 'A temporary error prevented this signing request from loading. Please try again later.'}
               </p>
             </>
           )}
@@ -402,6 +455,11 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
       </header>
 
       {/* Guide Banner */}
+      {document?.status === 'pending' && signer?.status === 'pending' && (
+        <div style={{ background: '#f0fdf4', borderBottom: '1px solid #bbf7d0', padding: '8px 24px', color: '#166534', fontSize: 13 }}>
+          Pending — this document is ready for your signature.
+        </div>
+      )}
       <div
         style={{
           background: adoptedSignature ? '#f0fdf4' : '#eff6ff',
