@@ -111,11 +111,6 @@ func (h SigningHandler) GetSigningInfo(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, 500, "Could not read signature boxes")
 		return
 	}
-	if len(boxes) == 0 {
-		utils.Error(w, 422, "No signature boxes are assigned to this signer. Please contact the sender.")
-		return
-	}
-
 	// Audit: record the first time this signer opens the link (not every refresh)
 	performedBy := fmt.Sprintf("%s (%s)", signer.Name, signer.Email)
 	var alreadyLogged bool

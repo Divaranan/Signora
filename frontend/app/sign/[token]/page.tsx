@@ -48,6 +48,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
   const [loading, setLoading] = useState(true);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [signatureSetupError, setSignatureSetupError] = useState('');
   const [signer, setSigner] = useState<Signer | null>(null);
   const [document, setDocument] = useState<DocInfo | null>(null);
   const [boxes, setBoxes] = useState<Box[]>([]);
@@ -74,6 +75,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
         setPdfPagesLoaded(false);
         setBoxes([]);
         setPdfData(null);
+        setSignatureSetupError('');
         setErrorStatus(null);
         setErrorMessage('');
 
@@ -118,11 +120,13 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
 
   useEffect(() => {
     if (!pdfPagesLoaded) return;
-    if (boxes.some((box) => !Number.isInteger(box.page) || box.page < 1 || box.page > totalPages)) {
-      setErrorStatus(422);
-      setErrorMessage('A signature box refers to a page that is not in this PDF. Please contact the sender.');
+    const firstValidBox = boxes.find((box) =>
+      Number.isInteger(box.page) && box.page >= 1 && box.page <= totalPages
+    );
+    if (currentPage < 1 || currentPage > totalPages) {
+      setCurrentPage(firstValidBox?.page || 1);
     }
-  }, [boxes, pdfPagesLoaded, totalPages]);
+  }, [boxes, currentPage, pdfPagesLoaded, totalPages]);
 
   // Handle signature adoption
   function handleSignatureAdopted(dataUrl: string) {
@@ -132,13 +136,12 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
 
   // Submit all signatures
   async function handleSubmit() {
-    if (!adoptedSignature) {
-      setIsPadOpen(true);
+    if (!canSubmit) {
+      setSignatureSetupError('The PDF and all assigned signature boxes must finish loading and pass verification before you can submit.');
       return;
     }
-    if (!boxes.length || !pdfPagesLoaded || boxes.some((box) => box.page < 1 || box.page > totalPages)) {
-      setErrorStatus(422);
-      setErrorMessage('Required signature boxes could not be verified. Please contact the sender.');
+    if (!adoptedSignature) {
+      setIsPadOpen(true);
       return;
     }
 
@@ -209,6 +212,16 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
               <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
                 {errorMessage ||
                   'This signing link has expired. Please contact the document sender to receive an updated link.'}
+              </p>
+            </>
+          ) : errorStatus === 422 ? (
+            <>
+              <AlertTriangle size={54} color="#d97706" style={{ margin: '0 auto 16px' }} />
+              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>
+                Signing Setup Needs Attention
+              </h2>
+              <p className="muted" style={{ margin: '0 0 20px', lineHeight: 1.5 }}>
+                {errorMessage || 'The sender needs to correct the signature boxes before you can sign.'}
               </p>
             </>
           ) : (
@@ -319,6 +332,18 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
   }
 
   const currentPageBoxes = boxes.filter((b) => b.page === currentPage);
+  const hasInvalidBoxes = pdfPagesLoaded && boxes.some((box) =>
+    !Number.isInteger(box.page) || box.page < 1 || box.page > totalPages ||
+    ![box.x, box.y, box.width, box.height].every(Number.isFinite) ||
+    box.x < 0 || box.y < 0 || box.width <= 0 || box.height <= 0 ||
+    box.x + box.width > 100 || box.y + box.height > 100
+  );
+  const canSubmit = !loading && !!pdfData && pdfPagesLoaded && boxes.length > 0 && !hasInvalidBoxes;
+  const boxValidationMessage = hasInvalidBoxes
+    ? 'One or more assigned signature boxes do not fit on this PDF. The PDF is still available for review; please contact the sender to correct the document.'
+    : pdfPagesLoaded && boxes.length === 0
+      ? 'No signature boxes are assigned to you. You can review the PDF, but signing is disabled until the sender assigns at least one box.'
+      : '';
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
@@ -368,9 +393,10 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
           <button
             className="btn success"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || !canSubmit}
+            title={!canSubmit ? 'Waiting for the PDF and assigned signature boxes to be verified' : undefined}
           >
-            <Send size={15} /> {submitting ? 'Submitting...' : 'Finish & Submit'}
+            <Send size={15} /> {submitting ? 'Submitting...' : canSubmit ? 'Finish & Submit' : 'Preparing PDF...'}
           </button>
         </div>
       </header>
@@ -410,6 +436,8 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
       </div>
 
       <main className="shell" style={{ padding: '20px 16px' }}>
+        {signatureSetupError && <div className="error" role="alert" style={{ marginBottom: 14 }}>{signatureSetupError}</div>}
+        {boxValidationMessage && <div className="error" role="alert" style={{ marginBottom: 14 }}>{boxValidationMessage}</div>}
         {loading ? (
           <p className="muted" style={{ textAlign: 'center', margin: '40px 0' }}>
             Loading document for signing...
