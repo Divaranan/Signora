@@ -11,7 +11,7 @@ export default function WorkflowStepper({ docId, currentStep }: WorkflowStepperP
   const steps = [
     { key: 'prepare', label: '1. Place Boxes', icon: PenTool, href: `/documents/${docId}/prepare` },
     { key: 'signers', label: '2. Signers & Send', icon: Users, href: `/documents/${docId}/signers` },
-    { key: 'status', label: '3. Status & Audit', icon: Activity, href: `/documents/${docId}/status` },
+    { key: 'status', label: '3. Status', icon: Activity, href: `/documents/${docId}/status` },
   ];
 
   return (

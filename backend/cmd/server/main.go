@@ -11,7 +11,6 @@ import (
 	"phase1-signora/backend/internal/database"
 	"phase1-signora/backend/internal/handlers"
 	"phase1-signora/backend/internal/middleware"
-	"phase1-signora/backend/internal/services"
 )
 
 func main() {
@@ -27,17 +26,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mailer := &services.Mailer{Host: cfg.SMTPHost, Port: cfg.SMTPPort, User: cfg.SMTPUser, Pass: cfg.SMTPPass}
-	if !mailer.Configured() {
-		log.Println("WARNING: SMTP_USER / SMTP_PASS are not set, so no emails will be sent (signing links are still returned by the API).")
-	}
-
 	auth := handlers.AuthHandler{DB: db, Secret: cfg.JWTSecret}
 	docs := handlers.DocumentHandler{DB: db, UploadDir: cfg.UploadDir}
-	signers := handlers.SignersHandler{DB: db, FrontendURL: cfg.FrontendURL, Mailer: mailer}
+	signers := handlers.SignersHandler{DB: db, FrontendURL: cfg.FrontendURL}
 	boxes := handlers.BoxesHandler{DB: db}
-	status := handlers.StatusHandler{DB: db, UploadDir: cfg.UploadDir, SignedDir: cfg.SignedDir, Mailer: mailer}
-	signing := handlers.SigningHandler{DB: db, UploadDir: cfg.UploadDir, SignedDir: cfg.SignedDir, Mailer: mailer}
+	status := handlers.StatusHandler{DB: db, UploadDir: cfg.UploadDir, SignedDir: cfg.SignedDir}
+	signing := handlers.SigningHandler{DB: db, UploadDir: cfg.UploadDir}
 
 	mux := http.NewServeMux()
 
@@ -77,11 +71,9 @@ func main() {
 	protected.HandleFunc("GET /api/documents/{id}/boxes", boxes.List)
 	protected.HandleFunc("POST /api/documents/{id}/boxes", boxes.Save)
 
-	// Status, Audit Trail & Completed Download
+	// Status & Completed Download
 	protected.HandleFunc("GET /api/documents/{id}/status", status.GetStatus)
-	protected.HandleFunc("GET /api/documents/{id}/audit", status.GetAuditLogs)
 	protected.HandleFunc("GET /api/documents/{id}/signed-download", status.DownloadSigned)
-	protected.HandleFunc("POST /api/documents/{id}/regenerate", status.Regenerate)
 
 	// Attach JWT middleware to protected routes
 	mux.Handle("/api/auth/me", middleware.Auth(cfg.JWTSecret)(protected))

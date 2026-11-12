@@ -192,9 +192,9 @@ export default function Dashboard() {
                       className="btn sm secondary"
                       style={{ width: '100%' }}
                       onClick={() => router.push(`/documents/${doc.id}/status`)}
-                      title="Track signing progress and audit logs"
+                      title="Track signing progress"
                     >
-                      <Activity size={13} /> Status & Audit
+                      <Activity size={13} /> Status
                     </button>
                   </div>
 

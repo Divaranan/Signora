@@ -468,13 +468,12 @@ if (returnBox !== null && /^\d+$/.test(returnBox)) {
               <div className="row" style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <FileCheck size={26} color="#16a34a" />
-                  <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700 }}>Document Sent for Signing!</h2>
+                  <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700 }}>Signing Links Ready</h2>
                 </div>
               </div>
 
               <p className="muted" style={{ margin: '0 0 16px' }}>
-                Each recipient has received their secure tokenized signing link. You can also copy them
-                directly below to test or send manually:
+                Share each recipient&apos;s secure signing link using the copy or open controls below.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>

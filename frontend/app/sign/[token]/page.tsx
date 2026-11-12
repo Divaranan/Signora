@@ -377,7 +377,7 @@ export default function SignerPage({ params }: { params: Promise<{ token: string
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#15803d', fontSize: 13, fontWeight: 600 }}>
-            <ShieldCheck size={18} /> Digitally logged in Document Audit Trail
+            <ShieldCheck size={18} /> Your signature will be saved with this document
           </div>
         </div>
       </div>
