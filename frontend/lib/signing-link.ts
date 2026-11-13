@@ -1,5 +1,4 @@
 export function signingLink(token: string): string {
-  if (typeof window === 'undefined') return '';
-
+ main
   return `${window.location.origin}/sign/${encodeURIComponent(token)}`;
 }
