@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #f5f7fb; color: #172033; font-family: Inter, Arial, sans-serif; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+
+.shell { max-width: 1180px; margin: 0 auto; padding: 28px 20px; }
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 28px; background: white; border-bottom: 1px solid #e8ebf2; position: sticky; top: 0; z-index: 100; }
+.brand { font-size: 22px; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px; display: inline-flex; align-items: center; gap: 8px; }
+.navlinks { display: flex; gap: 16px; align-items: center; }
+
+.btn { border: 0; border-radius: 9px; padding: 10px 16px; background: #4f46e5; color: white; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s ease; }
+.btn:hover:not(:disabled) { background: #4338ca; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.secondary { background: #eef0ff; color: #4338ca; }
+.btn.secondary:hover:not(:disabled) { background: #e0e4fe; }
+.btn.success { background: #16a34a; color: white; }
+.btn.success:hover:not(:disabled) { background: #15803d; }
+.btn.danger { background: #fee2e2; color: #b91c1c; }
+.btn.danger:hover:not(:disabled) { background: #fecaca; }
+.btn.ghost { background: transparent; color: #475569; }
+.btn.ghost:hover:not(:disabled) { background: #f1f5f9; }
+.btn.sm { padding: 6px 11px; font-size: 13px; border-radius: 7px; }
+
+.card { background: white; border: 1px solid #e8ebf2; border-radius: 14px; padding: 22px; box-shadow: 0 4px 18px #17203306; }
+.auth { max-width: 440px; margin: 65px auto; }
+.field { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+.field label { font-size: 13.5px; font-weight: 600; color: #334155; }
+.field input, .field select, .field textarea { padding: 11px 13px; border: 1px solid #d9deea; border-radius: 8px; outline: none; background: #fff; font-size: 14px; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px #6366f115; }
+
+.muted { color: #64748b; font-size: 14px; }
+.error { color: #b91c1c; background: #fef2f2; border: 1px solid #fee2e2; padding: 11px 14px; border-radius: 8px; font-size: 13.5px; }
+.success { color: #15803d; background: #f0fdf4; border: 1px solid #dcfce7; padding: 11px 14px; border-radius: 8px; font-size: 13.5px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.doc { display: flex; flex-direction: column; gap: 12px; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.badge.draft { background: #f1f5f9; color: #475569; }
+.badge.pending { background: #fef3c7; color: #b45309; }
+.badge.completed { background: #dcfce7; color: #15803d; }
+.badge.signed { background: #dcfce7; color: #15803d; }
+
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.drop { border: 2px dashed #c7cce0; border-radius: 12px; padding: 35px; text-align: center; background: #fafaff; cursor: pointer; }
+.drop:hover { border-color: #6366f1; background: #f5f7ff; }
+.title { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.4px; }
+.spacer { height: 20px; }
+
+/* Workflow Stepper Header */
+.stepper { display: flex; background: white; border: 1px solid #e8ebf2; border-radius: 12px; padding: 8px; margin-bottom: 22px; gap: 6px; overflow-x: auto; }
+.step-item { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 600; color: #64748b; transition: all 0.15s ease; text-decoration: none; cursor: pointer; }
+.step-item.active { background: #eef2ff; color: #4338ca; }
+.step-item.done { color: #15803d; }
+.step-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; background: #e2e8f0; color: #475569; }
+.step-item.active .step-num { background: #4f46e5; color: white; }
+.step-item.done .step-num { background: #16a34a; color: white; }
+
+/* PDF Canvas & Placement Stage */
+.pdf-stage-wrapper { display: flex; flex-direction: column; align-items: center; background: #334155; padding: 20px; border-radius: 12px; min-height: 600px; position: relative; overflow: auto; }
+.pdf-toolbar { display: flex; justify-content: space-between; align-items: center; width: 100%; background: #1e293b; color: white; padding: 10px 18px; border-radius: 8px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.pdf-page-container { position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); background: white; user-select: none; }
+
+/* Signature Box in Sender placement view */
+.sig-box {
+  position: absolute;
+  border: 2px dashed #4f46e5;
+  background: rgba(99, 102, 241, 0.15);
+  box-sizing: border-box;
+  cursor: move;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px;
+  transition: box-shadow 0.15s;
+  user-select: none;
+}
+.sig-box:hover, .sig-box.selected {
+  border-style: solid;
+  border-color: #4338ca;
+  background: rgba(99, 102, 241, 0.22);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  z-index: 10;
+}
+.sig-box-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  background: #4f46e5;
+  border: 2px solid white;
+  border-radius: 3px;
+  cursor: se-resize;
+}
+.sig-box-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; color: #3730a3; }
+.sig-box-del { border: none; background: transparent; color: #b91c1c; cursor: pointer; padding: 0 2px; }
+
+/* Progress bar */
+.progress-bar-bg { width: 100%; height: 10px; background: #e2e8f0; border-radius: 8px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #16a34a); transition: width 0.3s ease; }
+
+
+/* Signature Pad Modal & Canvas */
+.sig-pad-container { border: 2px dashed #cbd5e1; border-radius: 10px; background: white; touch-action: none; position: relative; }
+.cursive-font { font-family: 'Caveat', cursive, sans-serif; }
+
+/* Modal overlay */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+.modal-content { background: white; border-radius: 16px; padding: 26px; max-width: 540px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
