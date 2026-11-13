@@ -69,3 +69,4 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_document_created ON audit_logs(document_id, created_at ASC);
+main

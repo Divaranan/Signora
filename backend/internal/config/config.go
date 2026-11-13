@@ -4,6 +4,7 @@ import "os"
 
 type Config struct {
 	Port, DatabaseURL, JWTSecret, FrontendURL, UploadDir, SignedDir string
+
 }
 
 func Load() Config {
@@ -14,6 +15,7 @@ func Load() Config {
 		FrontendURL: get("FRONTEND_URL", "http://localhost:3000"),
 		UploadDir:   get("UPLOAD_DIR", "./uploads"),
 		SignedDir:   get("SIGNED_DIR", "./signed"),
+
 	}
 }
 

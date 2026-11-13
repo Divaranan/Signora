@@ -15,17 +15,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"phase1-signora/backend/internal/middleware"
 	"phase1-signora/backend/internal/models"
+
 	"phase1-signora/backend/internal/utils"
 )
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
-// Signing links are valid for 7 days from issuance.
+main
 const signingLinkTTL = 7 * 24 * time.Hour
 
 type SignersHandler struct {
 	DB          *pgxpool.Pool
 	FrontendURL string
+ main
 }
 
 type addSignerInput struct {
@@ -47,7 +49,7 @@ func (h SignersHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.DB.Query(r.Context(), `
-		SELECT id, document_id, name, email, token, token_expires_at, status, signed_at, created_at
+ main
 		FROM signers
 		WHERE document_id = $1
 		ORDER BY created_at ASC
@@ -61,12 +63,12 @@ func (h SignersHandler) List(w http.ResponseWriter, r *http.Request) {
 	signers := []models.Signer{}
 	for rows.Next() {
 		var s models.Signer
-		var signedAt *time.Time
-		if err := rows.Scan(&s.ID, &s.DocumentID, &s.Name, &s.Email, &s.Token, &s.TokenExpiresAt, &s.Status, &signedAt, &s.CreatedAt); err != nil {
+main
 			utils.Error(w, 500, "Could not read signers")
 			return
 		}
 		s.SignedAt = signedAt
+ main
 		signers = append(signers, s)
 	}
 	if err := rows.Err(); err != nil {
@@ -146,6 +148,7 @@ func (h SignersHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+ main
 	utils.JSON(w, 201, map[string]any{"message": "Signer added successfully", "signer": newSigner})
 }
 
@@ -167,9 +170,7 @@ func (h SignersHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.DB.QueryRow(r.Context(), `
-		DELETE FROM signers WHERE id=$1 AND document_id=$2 RETURNING id
-	`, signerID, docID).Scan(&signerID)
+ main
 	if err == pgx.ErrNoRows {
 		utils.Error(w, 404, "Signer not found")
 		return
@@ -182,12 +183,14 @@ func (h SignersHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	// Unlink any signature boxes assigned to this signer
 	_, _ = h.DB.Exec(r.Context(), `UPDATE signature_boxes SET signer_id=NULL WHERE signer_id=$1`, signerID)
 
+main
 	utils.JSON(w, 200, map[string]string{"message": "Signer removed successfully"})
 }
 
 type sendTarget struct {
 	ID, Name, Email, Token string
 	ExpiresAt              time.Time
+ main
 }
 
 type signerLink struct {
@@ -198,14 +201,12 @@ type signerLink struct {
 	SigningURL string `json:"signingUrl"`
 }
 
-// Send returns current signing links for every signer who has not signed yet.
+main
 func (h SignersHandler) Send(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := r.PathValue("id")
 	userID := middleware.CurrentUserID(r)
-
-	var status string
-	err := h.DB.QueryRow(ctx, `SELECT status FROM documents WHERE id=$1 AND user_id=$2`, docID, userID).Scan(&status)
+ main
 	if err != nil {
 		utils.Error(w, 404, "Document not found")
 		return
@@ -258,7 +259,7 @@ func (h SignersHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Load the signers who still need to sign
 	rows, err := h.DB.Query(ctx, `
-		SELECT id, name, email, token, token_expires_at
+main
 		FROM signers
 		WHERE document_id=$1 AND status <> 'signed'
 		ORDER BY created_at ASC
@@ -270,7 +271,7 @@ func (h SignersHandler) Send(w http.ResponseWriter, r *http.Request) {
 	var targets []sendTarget
 	for rows.Next() {
 		var t sendTarget
-		if err := rows.Scan(&t.ID, &t.Name, &t.Email, &t.Token, &t.ExpiresAt); err != nil {
+main
 			rows.Close()
 			utils.Error(w, 500, "Could not read signers")
 			return
@@ -288,28 +289,13 @@ func (h SignersHandler) Send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+main
 	if status == "draft" {
 		if _, err := h.DB.Exec(ctx, `UPDATE documents SET status='pending' WHERE id=$1 AND status='draft'`, docID); err != nil {
 			utils.Error(w, 500, "Could not update document status")
 			return
 		}
-	}
-
-	baseURL := strings.TrimRight(h.FrontendURL, "/")
-	links := make([]signerLink, 0, len(targets))
-
-	for _, t := range targets {
-		token := t.Token
-		if time.Now().After(t.ExpiresAt) {
-			token, err = generateSecureToken()
-			if err != nil {
-				utils.Error(w, 500, "Could not create a secure signing link")
-				return
-			}
-			expires := time.Now().Add(signingLinkTTL)
-			if _, err := h.DB.Exec(ctx, `UPDATE signers SET token=$1, token_expires_at=$2 WHERE id=$3 AND status='pending'`, token, expires, t.ID); err != nil {
-				utils.Error(w, 500, "Could not refresh an expired signing link")
-				return
+ main
 			}
 		}
 
@@ -317,12 +303,7 @@ func (h SignersHandler) Send(w http.ResponseWriter, r *http.Request) {
 		links = append(links, signerLink{
 			SignerID: t.ID, Name: t.Name, Email: t.Email, Token: token, SigningURL: link,
 		})
-	}
-
-	utils.JSON(w, 200, map[string]any{
-		"message": "Document is ready for signing. Share the links below with the signers.",
-		"status":  "pending",
-		"links":   links,
+main
 	})
 }
 

@@ -1,22 +1,19 @@
 package handlers
 
 import (
-	"encoding/json"
+main
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"phase1-signora/backend/internal/models"
-	"phase1-signora/backend/internal/utils"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+ main
 )
 
 type SigningHandler struct {
 	DB        *pgxpool.Pool
 	UploadDir string
+ main
 }
 
 type SubmitSignatureRequest struct {
@@ -121,6 +118,7 @@ func (h SigningHandler) GetSigningInfo(w http.ResponseWriter, r *http.Request) {
 		utils.Error(w, 500, "Could not read signature boxes")
 		return
 	}
+main
 	utils.JSON(w, 200, map[string]any{
 		"signer": map[string]any{
 			"id":     signer.ID,
@@ -182,7 +180,7 @@ func (h SigningHandler) SubmitSignature(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var signerID, docID, signerName, currentStatus string
+ main
 	var expiresAt time.Time
 	tx, err := h.DB.Begin(r.Context())
 	if err != nil {
@@ -193,12 +191,12 @@ func (h SigningHandler) SubmitSignature(w http.ResponseWriter, r *http.Request) 
 
 	var documentStatus string
 	err = tx.QueryRow(r.Context(), `
-		SELECT s.id, s.document_id, s.name, s.status, s.token_expires_at, d.status
+main
 		FROM signers s
 		JOIN documents d ON d.id = s.document_id
 		WHERE s.token = $1
 		FOR UPDATE OF s
-	`, token).Scan(&signerID, &docID, &signerName, &currentStatus, &expiresAt, &documentStatus)
+main
 	if err == pgx.ErrNoRows {
 		utils.JSON(w, 404, map[string]string{"error": "Invalid signing link", "state": "invalid"})
 		return
@@ -269,6 +267,7 @@ func (h SigningHandler) SubmitSignature(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+main
 	if err := tx.Commit(r.Context()); err != nil {
 		utils.Error(w, 500, "Could not commit signature")
 		return
@@ -286,6 +285,7 @@ func (h SigningHandler) SubmitSignature(w http.ResponseWriter, r *http.Request) 
 	}
 
 	allCompleted := pendingCount == 0
+main
 
 	utils.JSON(w, 200, map[string]any{
 		"message":      "Signature recorded successfully!",

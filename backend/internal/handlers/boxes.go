@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+
 	"math"
 	"net/http"
 	"strings"
@@ -152,6 +153,7 @@ func (h BoxesHandler) Save(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 
 	if err := tx.Commit(r.Context()); err != nil {
 		utils.Error(w, 500, "Could not commit transaction")

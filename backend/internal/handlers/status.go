@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"phase1-signora/backend/internal/middleware"
 	"phase1-signora/backend/internal/models"
+main
 	"phase1-signora/backend/internal/utils"
 )
 
@@ -19,9 +20,7 @@ type StatusHandler struct {
 	DB        *pgxpool.Pool
 	UploadDir string
 	SignedDir string
-}
-
-// GetStatus returns the document status, signers, boxes, and signing progress.
+main
 func (h StatusHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	docID := r.PathValue("id")
 	userID := middleware.CurrentUserID(r)
@@ -48,7 +47,7 @@ func (h StatusHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Query signers
 	signerRows, err := h.DB.Query(r.Context(), `
-		SELECT id, document_id, name, email, token, token_expires_at, status, signed_at, created_at
+main
 		FROM signers
 		WHERE document_id = $1
 		ORDER BY created_at ASC
@@ -63,12 +62,12 @@ func (h StatusHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	signedCount := 0
 	for signerRows.Next() {
 		var s models.Signer
-		var signedAt *time.Time
-		if err := signerRows.Scan(&s.ID, &s.DocumentID, &s.Name, &s.Email, &s.Token, &s.TokenExpiresAt, &s.Status, &signedAt, &s.CreatedAt); err != nil {
+main
 			utils.Error(w, 500, "Could not read signers")
 			return
 		}
 		s.SignedAt = signedAt
+ main
 		if s.Status == "signed" {
 			signedCount++
 		}
@@ -109,6 +108,7 @@ func (h StatusHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+ main
 	totalSigners := len(signers)
 	progress := 0
 	if totalSigners > 0 {
@@ -121,6 +121,7 @@ func (h StatusHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		Document:     doc,
 		Signers:      signers,
 		Boxes:        boxes,
+main
 		TotalSigners: totalSigners,
 		SignedCount:  signedCount,
 		Progress:     progress,
@@ -161,7 +162,7 @@ func (h StatusHandler) DownloadSigned(w http.ResponseWriter, r *http.Request) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		legacy := filepath.Join(h.UploadDir, filepath.Base(*signedName)) // older documents
 		if _, err2 := os.Stat(legacy); err2 != nil {
-			utils.Error(w, 404, "Signed PDF file is missing on the server. Contact the sender for assistance.")
+main
 			return
 		}
 		filePath = legacy
@@ -174,3 +175,4 @@ func (h StatusHandler) DownloadSigned(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, strings.ReplaceAll(downloadName, "\"", "")))
 	http.ServeFile(w, r, filePath)
 }
+ main

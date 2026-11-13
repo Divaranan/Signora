@@ -9,8 +9,7 @@ import {
   Copy,
   Check,
   ExternalLink,
-  RefreshCw,
-  Users,
+main
 } from 'lucide-react';
 import Nav from '@/components/Nav';
 import WorkflowStepper from '@/components/WorkflowStepper';
@@ -28,6 +27,7 @@ interface Signer {
   createdAt: string;
 }
 
+main
 interface StatusSummary {
   document: {
     id: string;
@@ -39,6 +39,7 @@ interface StatusSummary {
     signedFileName?: string;
   };
   signers: Signer[];
+ main
   totalSigners: number;
   signedCount: number;
   progress: number;
@@ -181,7 +182,7 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
       <main className="shell">
         <div className="row" style={{ marginBottom: 14 }}>
           <div>
-            <h1 className="title">Document Status</h1>
+main
             <p className="muted" style={{ margin: 0 }}>
               {summary ? `Title: ${summary.document.title}` : 'Real-time document signing progress.'}
             </p>
@@ -214,7 +215,7 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
                   borderRadius: 8,
                 }}
               >
-                <Clock size={15} /> Signed PDF is unavailable until PDF finalization is integrated
+ main
               </div>
             )}
           </div>
@@ -359,6 +360,7 @@ export default function DocumentStatusPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
 
+main
             </div>
           </>
         ) : null}
